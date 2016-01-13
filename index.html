@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta charset="UTF-8">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r73/three.min.js"></script>
+        <script src="lib/three.js/examples/js/controls/TrackballControls.js"></script>
+        <style>
+            body {
+                margin: 0px;
+                background-color: #000000;
+                overflow: hidden;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="canvas_frame"></div>
+        <script>
+            
+            var canvasFrame, scene, renderer;
+            var camera, trackball;
+            var object;
+
+            init();
+            init_camera();
+            init_object();
+            animate();
+
+            function init() {
+                renderer = new THREE.WebGLRenderer();
+                renderer.setSize( window.innerWidth, window.innerHeight );
+                renderer.setClearColor(0xEEEEEE, 1.0);
+                canvasFrame = document.getElementById('canvas_frame');
+                canvasFrame.appendChild( renderer.domElement );
+                scene = new THREE.Scene();
+
+				var light = new THREE.DirectionalLight("#ffffff", 1);
+				var ambient = new THREE.AmbientLight("#771111");
+				light.position.set(0, 100, 30);
+				scene.add(light);
+				scene.add(ambient);
+
+				var axisHelper = new THREE.AxisHelper( 1000 );
+				scene.add( axisHelper );
+            }
+            
+            function init_camera(){
+                camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
+                camera.position.set(100,100,100);
+                camera.lookAt( {x: 0, y: 0, z: 0} );
+                
+                trackball = new THREE.TrackballControls( camera );
+            }
+            
+            function init_object(){
+				var points = getPoints();
+
+				var geometry = new THREE.Geometry();
+				geometry.vertices = points;;
+
+				var material = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+
+				// Create the final Object3d to add to the scene
+				var curveObject = new THREE.Line( geometry, material );
+				
+				scene.add( curveObject );
+
+
+				var material = new THREE.MeshPhongMaterial({                                      
+					color: "blue",
+					side: THREE.DoubleSide,
+					wireframe: false
+				});
+
+				var material2 = new THREE.MeshPhongMaterial({
+					color: 0x000000,
+					wireframe: true
+				});
+
+				var geometry = new THREE.LatheGeometry( points );
+				var Lathe = new THREE.Mesh( geometry, material );
+
+				scene.add(Lathe);
+				
+            }
+
+            function animate() {
+                requestAnimationFrame( animate );
+                trackball.update();
+                renderer.render( scene, camera );
+            }
+
+			function getPoints(){
+				var points = [];
+
+				var svgCurvePoints = [
+					[[55, -2.14], [91.26, 17.76], [113.4, 39.73]],
+					[[21.8, 21.63], [44, 53.52,], [45.62, 112.66]],
+					[[2.18, 78.47], [-35.85, 124.36], [-50.1, 144.48]],
+					[[-4.92, 6.95], [-67.7,97.58], [-72.06, 104.8]],
+					[[-11.2, 4.25], [-36.87, -0.05], [-36.87, -0.05]]
+				];
+
+				for (var i = 0; i < svgCurvePoints.length; i++){
+					var startPoint = (i == 0) ? [0, 0] : svgCurvePoints[i-1][2];
+					var controlPoint1 = svgCurvePoints[i][0]; 
+					var controlPoint2 = svgCurvePoints[i][1]; 
+					var endPoint = svgCurvePoints[i][2]; 
+
+					var curve = new THREE.CubicBezierCurve3(
+						point2vector3( startPoint ),
+						point2vector3( controlPoint1 ),
+						point2vector3( controlPoint2 ),
+						point2vector3( endPoint )
+					);
+
+					Array.prototype.push.apply( points, curve.getPoints(100) );
+				}
+
+				return points;
+			}
+
+			function point2vector3(point) {
+				return new THREE.Vector3( point[0], 0, point[1] );
+			}
+        </script>
+    </body>
+</html>
