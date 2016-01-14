@@ -11,15 +11,22 @@
                 background-color: #000000;
                 overflow: hidden;
             }
+			#file-form {
+				position: absolute;
+				right: 5px; bottom: 5px;
+				z-index: 100;
+			}
         </style>
     </head>
     <body>
         <div id="canvas_frame"></div>
+		<div id="file-form"><input type="file" id="form"></div>
+
         <script>
             
             var canvasFrame, scene, renderer;
             var camera, trackball;
-            var object;
+            var texture, balloon_material, Lathe;
 
             init();
             init_camera();
@@ -29,24 +36,27 @@
             function init() {
                 renderer = new THREE.WebGLRenderer();
                 renderer.setSize( window.innerWidth, window.innerHeight );
-                renderer.setClearColor(0xEEEEEE, 1.0);
+                renderer.setClearColor(0xa0d8ef, 1.0);
                 canvasFrame = document.getElementById('canvas_frame');
                 canvasFrame.appendChild( renderer.domElement );
                 scene = new THREE.Scene();
 
-				var light = new THREE.DirectionalLight("#ffffff", 1);
-				var ambient = new THREE.AmbientLight("#771111");
-				light.position.set(0, 100, 30);
-				scene.add(light);
+				//var light = new THREE.DirectionalLight("#ffffff", 1);
+				var ambient = new THREE.AmbientLight("#aaaaaa");
+				//light.position.set(500, 500, 0);
+				//scene.add(light);
 				scene.add(ambient);
+
+				var light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+				scene.add( light );
 
 				var axisHelper = new THREE.AxisHelper( 1000 );
 				scene.add( axisHelper );
             }
             
             function init_camera(){
-                camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
-                camera.position.set(100,100,100);
+                camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 10000 );
+                camera.position.set(500,500,0);
                 camera.lookAt( {x: 0, y: 0, z: 0} );
                 
                 trackball = new THREE.TrackballControls( camera );
@@ -54,17 +64,6 @@
             
             function init_object(){
 				var points = getPoints();
-
-				var geometry = new THREE.Geometry();
-				geometry.vertices = points;;
-
-				var material = new THREE.LineBasicMaterial( { color : 0xff0000 } );
-
-				// Create the final Object3d to add to the scene
-				var curveObject = new THREE.Line( geometry, material );
-				
-				scene.add( curveObject );
-
 
 				var material = new THREE.MeshPhongMaterial({                                      
 					color: "blue",
@@ -76,12 +75,27 @@
 					color: 0x000000,
 					wireframe: true
 				});
+				
+				texture = THREE.ImageUtils.loadTexture( "c1.png" );
+				texture.flipY = false;
+				// flipX
+				texture.wrapS = THREE.RepeatWrapping;
+				texture.repeat.x = - 1;
+				balloon_material = new THREE.MeshPhongMaterial({
+					map: texture,
+					side: THREE.DoubleSide
+				});
 
-				var geometry = new THREE.LatheGeometry( points );
-				var Lathe = new THREE.Mesh( geometry, material );
+				var geometry = new THREE.LatheGeometry( points, 24 );
+				Lathe = new THREE.Mesh( geometry, balloon_material );
+
+				var q = new THREE.Quaternion().setFromAxisAngle(
+					new THREE.Vector3(1,1,0).normalize(), Math.PI / 2);
+
+				Lathe.rotation.setFromQuaternion(q);
+				
 
 				scene.add(Lathe);
-				
             }
 
             function animate() {
@@ -93,35 +107,55 @@
 			function getPoints(){
 				var points = [];
 
+				// relative points x,y
 				var svgCurvePoints = [
 					[[55, -2.14], [91.26, 17.76], [113.4, 39.73]],
 					[[21.8, 21.63], [44, 53.52,], [45.62, 112.66]],
 					[[2.18, 78.47], [-35.85, 124.36], [-50.1, 144.48]],
 					[[-4.92, 6.95], [-67.7,97.58], [-72.06, 104.8]],
-					[[-11.2, 4.25], [-36.87, -0.05], [-36.87, -0.05]]
 				];
 
+				function v3(point) {
+					return new THREE.Vector3( point[0], 0, point[1]);
+				}
+
+				var lastPoint = v3( [0, -200] );
 				for (var i = 0; i < svgCurvePoints.length; i++){
-					var startPoint = (i == 0) ? [0, 0] : svgCurvePoints[i-1][2];
-					var controlPoint1 = svgCurvePoints[i][0]; 
-					var controlPoint2 = svgCurvePoints[i][1]; 
-					var endPoint = svgCurvePoints[i][2]; 
+					var startPoint = lastPoint;
+					var controlPoint1 = v3( svgCurvePoints[i][0]).add( startPoint );
+					var controlPoint2 = v3( svgCurvePoints[i][1]).add( startPoint );
+					var endPoint = v3( svgCurvePoints[i][2] ).add( startPoint );
+					lastPoint = endPoint;
 
 					var curve = new THREE.CubicBezierCurve3(
-						point2vector3( startPoint ),
-						point2vector3( controlPoint1 ),
-						point2vector3( controlPoint2 ),
-						point2vector3( endPoint )
+						startPoint,
+						controlPoint1,
+						controlPoint2,
+						endPoint
 					);
 
-					Array.prototype.push.apply( points, curve.getPoints(100) );
+					Array.prototype.push.apply( points, curve.getSpacedPoints(100) );
 				}
 
 				return points;
 			}
 
-			function point2vector3(point) {
-				return new THREE.Vector3( point[0], 0, point[1] );
+
+
+			document.getElementById( "form" ).onchange = function(){
+				var file = this.files[0];
+				window.URL = window.URL || window.webkitURL ;
+				var src = window.URL.createObjectURL( file ) ;
+
+				console.log(src);
+
+				texture = THREE.ImageUtils.loadTexture( src );
+				texture.flipY = false;
+				// flipX
+				texture.wrapS = THREE.RepeatWrapping;
+				texture.repeat.x = - 1;
+				balloon_material.map = texture;
+				animate();
 			}
         </script>
     </body>
