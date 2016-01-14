@@ -28,9 +28,13 @@
             var camera, trackball;
             var texture, balloon_material, Lathe;
 
+			var params = getUrlVars();
+			console.log(params);
+			var img = (params.img == undefined) ? 'mesh.png' : params.img;
+
             init();
             init_camera();
-            init_object();
+			createBalloon(img);
             animate();
 
             function init() {
@@ -62,7 +66,7 @@
                 trackball = new THREE.TrackballControls( camera );
             }
             
-            function init_object(){
+            function createBalloon(img){
 				var points = getPoints();
 
 				var material = new THREE.MeshPhongMaterial({                                      
@@ -75,8 +79,10 @@
 					color: 0x000000,
 					wireframe: true
 				});
-				
-				texture = THREE.ImageUtils.loadTexture( "mesh.png" );
+
+				var imageUtil = THREE.ImageUtils;
+				imageUtil.crossOrigin = 'anonymous';
+				texture = imageUtil.loadTexture( img );
 				texture.flipY = false;
 				// flipX
 				texture.wrapS = THREE.RepeatWrapping;
@@ -156,6 +162,19 @@
 				texture.repeat.x = - 1;
 				balloon_material.map = texture;
 				animate();
+			}
+
+			function getUrlVars (){
+				var vars = {}; 
+				var param = location.search.substring(1).split('&');
+				for(var i = 0; i < param.length; i++) {
+					var keySearch = param[i].search(/=/);
+					var key = '';
+					if(keySearch != -1) key = param[i].slice(0, keySearch);
+					var val = param[i].slice(param[i].indexOf('=', 0) + 1);
+					if(key != '') vars[key] = decodeURI(val);
+				} 
+				return vars; 
 			}
         </script>
     </body>
