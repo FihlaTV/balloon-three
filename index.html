@@ -50,8 +50,8 @@
 				var light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
 				scene.add( light );
 
-				var axisHelper = new THREE.AxisHelper( 1000 );
-				scene.add( axisHelper );
+				//var axisHelper = new THREE.AxisHelper( 1000 );
+				//scene.add( axisHelper );
             }
             
             function init_camera(){
@@ -76,12 +76,12 @@
 					wireframe: true
 				});
 				
-				texture = THREE.ImageUtils.loadTexture( "c1.png" );
+				texture = THREE.ImageUtils.loadTexture( "mesh.png" );
 				texture.flipY = false;
 				// flipX
 				texture.wrapS = THREE.RepeatWrapping;
 				texture.repeat.x = - 1;
-				balloon_material = new THREE.MeshPhongMaterial({
+				balloon_material = new THREE.MeshBasicMaterial({
 					map: texture,
 					side: THREE.DoubleSide
 				});
